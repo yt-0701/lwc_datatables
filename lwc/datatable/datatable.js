@@ -2,9 +2,9 @@ import { LightningElement, wire, track, api } from 'lwc';
 import { CurrentPageReference } from 'lightning/navigation';
 
 const DATA_TYPE = {
-    text: 'text',
-    number: 'number',
-    date: 'date' 
+    TEXT: 'text',
+    NUMBER: 'number',
+    DATE: 'date' 
 }
 export default class Datatable extends LightningElement {
     @wire(CurrentPageReference) pageRef;
@@ -15,63 +15,47 @@ export default class Datatable extends LightningElement {
     @track convHeaders;
     @track emptyDataLine;
 
+    // 最後尾行のインデックスを取得
     get lastLineIndex() {
         return this.convItems.length - 1;
     }
 
+    // 削除可能か否か（フラグ）
+    // ※最後の一行の場合、行追加が行えないため削除不可
     get isDeletableLine() {
         return this.lastLineIndex > 0;
     }
 
-    connectedCallback() {
-        this.convHeaders = [
-            { index: 0, disp: 'ほげ0', name: 'hoge0', type: 'text' },
-            { index: 1, disp: 'ほげ1', name: 'hoge1', type: 'text' },
-            { index: 2, disp: 'ほげ2', name: 'hoge2', type: 'text' },
-            { index: 3, disp: 'ほげ3', name: 'hoge3', type: 'text' },
-            { index: 4, disp: 'ほげ4', name: 'hoge4', type: 'text' },
-            { index: 5, disp: 'ほげ5', name: 'hoge5', type: 'text' },
-        ];
+    // 画面での更新を反映した最新データを取得（入力値this.itemsと同形式）
+    get newData() {
+        let now = [];
+        if (this.convItems.length < 1) return now;
         
-        this.convItems = [
-            {
-                index: 0,
-                dataset: [
-                    { index :0, name :'hoge0', value :11, type :'text'},
-                    { index :1, name :'hoge1', value :12, type :'text'},
-                    { index :2, name :'hoge2', value :13, type :'text'},
-                    { index :3, name :'hoge3', value :14, type :'text'},
-                    { index :4, name :'hoge4', value :15, type :'text'},
-                    { index :5, name :'hoge5', value :16, type :'text'}
-                ]
-            },
-            {
-                index: 1,
-                dataset: [
-                    { index :0, name :'hoge0', value :21, type :'text'},
-                    { index :1, name :'hoge1', value :22, type :'text'},
-                    { index :2, name :'hoge2', value :23, type :'text'},
-                    { index :3, name :'hoge3', value :24, type :'text'},
-                    { index :4, name :'hoge4', value :25, type :'text'},
-                    { index :5, name :'hoge5', value :26, type :'text'}
-                ]
-            }
-        ];
-        this.emptyDataset = [
-            { index :0, name :'hoge0', value: '', type :'text'},
-            { index :1, name :'hoge1', value: '', type :'text'},
-            { index :2, name :'hoge2', value: '', type :'text'},
-            { index :3, name :'hoge3', value: '', type :'text'},
-            { index :4, name :'hoge4', value: '', type :'text'},
-            { index :5, name :'hoge5', value: '', type :'text'}
-        ];
+        this.convItems.forEach(line => {
+            if (line['dataset'].length < 1) return true;
+            let tmp ={};
+            line['dataset'].forEach(row => {
+                tmp[row.name] = row.value;
+            })
+            now.push(tmp);
+        });
+        return now;
     }
 
+    // 初期化処理
+    connectedCallback() {
+        // itemsの変換にheader情報を使うので、header->itemの順番
+        this.convertHeaders();
+        this.converItems();
+    }
+
+    // 削除ボタン押下時の処理
     handleOnClickDeleteButton(event) {
         let deleteLineIndex = Number(event.target.dataset.lidx);
         this.convItems.splice(deleteLineIndex, 1);
     }
 
+    // 値変更時の処理
     handleValueChange(event) {
         let newValue = event.target.value;
         let lineIndex = Number(event.target.dataset.lidx);
@@ -88,8 +72,11 @@ export default class Datatable extends LightningElement {
         if (this.lastLineIndex == lineIndex) {
             this.addNewLine(lineIndex + 1);
         }
+
+        console.log(this.newData);
     }
 
+    // 新規行追加
     addNewLine(idx) {
         let newLine = {index: idx, dataset: []};
         
@@ -100,5 +87,63 @@ export default class Datatable extends LightningElement {
         });
 
         this.convItems.push(newLine);
+    }
+
+    // ユーザから入力されたヘッダー内容を変換する
+    convertHeaders() {
+        this.convHeaders = [];
+        if (this.headers.length < 1) return;
+        this.headers.forEach((header, index) => {
+            let tmp = {};
+            tmp['index'] = index;
+            if (!header.displayname) return
+            if (!header.name) return true;
+            tmp['name'] = header.name;
+            if (!header.displayname) return true;
+            tmp['disp'] = header.displayname;
+            if (!header.type || !(header.type.toUpperCase() in DATA_TYPE)) {
+                tmp['type'] = DATA_TYPE.TEXT;
+            } else {
+                tmp['type'] = DATA_TYPE[header.type.toUpperCase()];
+            }
+            this.convHeaders.push(tmp);
+        });
+    }
+
+    // ユーザから入力されたアイテムの内容を変換する
+    converItems() {
+        this.convItems = [];
+        if (this.items.length < 1) return;
+
+        this.items.forEach((item, index) => {
+            let tmpItem = {};
+            let dataset = [];
+            tmpItem['index'] = index;
+            this.convHeaders.forEach(header =>{
+                let rowData = {};
+                rowData['index'] = header.index;
+                rowData['name'] = header.name;
+                if(header.name in item) {
+                    rowData['value'] = item[header.name];
+                } else {
+                    rowData['value'] = '';
+                }
+                rowData['type'] = header.type;
+                dataset.push(rowData);
+            });
+            tmpItem['dataset'] = dataset;
+            this.convItems.push(tmpItem);
+        });
+
+        // 新規行追加用に空行作成
+        this.emptyDataset = [];
+        this.convHeaders.forEach(header =>{
+            let rowData = {};
+            rowData['index'] = header.index;
+            rowData['name'] = header.name;
+            rowData['value'] = '';
+            rowData['type'] = header.type;
+            this.emptyDataset.push(rowData);
+        });
     }
 }
