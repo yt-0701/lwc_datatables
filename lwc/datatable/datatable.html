@@ -12,6 +12,20 @@
                                 </div>
                             </a>
                         </th>
+                        <th key={header.index} aria-label={header.name} aria-sort="none" class="slds-is-resizable slds-is-sortable" scope="col" style="width:8.75rem">
+                            <a class="slds-th__action slds-text-link_reset" role="button" tabindex="-1">
+                                <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate">
+                                    <span class="slds-truncate" title={header.name}>{header.disp}（スキップ）</span>
+                                </div>
+                            </a>
+                        </th>
+                        <th key={header.index} aria-label={header.name} aria-sort="none" class="slds-is-resizable slds-is-sortable" scope="col" style="width:8.75rem">
+                            <a class="slds-th__action slds-text-link_reset" role="button" tabindex="-1">
+                                <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate">
+                                    <span class="slds-truncate" title={header.name}>{header.disp}</span>
+                                </div>
+                            </a>
+                        </th>
                     </template>
                     <th class="" scope="col" style="width:3rem"></th>
                 </tr>
@@ -23,6 +37,20 @@
 
                         </td>
                         <template for:each={line.dataset} for:item="item" for:index="vidx">
+                            <td key={item.index} class="slds-cell-edit" role="gridcell">
+                                <span class="slds-grid slds-grid_align-spread">
+                                    <lightning-input variant="label-hidden" name={item.name} value={item.value} type={item.type}
+                                        onblur={handleValueChange} data-lidx={lidx} data-vidx={vidx} class="value-input-field">
+                                    </lightning-input>
+                                </span>
+                            </td>
+                            <td key={item.index} class="slds-cell-edit" role="gridcell">
+                                <span class="slds-grid slds-grid_align-spread">
+                                    <lightning-input variant="label-hidden" name={item.name} value={item.value} type={item.type}
+                                        onblur={handleValueChange} tabindex="-1" data-lidx={lidx} data-vidx={vidx} class="value-input-field">
+                                    </lightning-input>
+                                </span>
+                            </td>
                             <td key={item.index} class="slds-cell-edit" role="gridcell">
                                 <span class="slds-grid slds-grid_align-spread">
                                     <lightning-input variant="label-hidden" name={item.name} value={item.value} type={item.type}
